@@ -9,7 +9,7 @@ from default_policy import default_policy
 from backup import backup
 from tree import Node, State
 from get_moves import get_moves
-from get_bestchild import get_bestchild
+from get_bestchild import get_bestchild_
 import numpy as np
 from collections import Counter
 import time
@@ -21,7 +21,7 @@ class MctsModel(Agent):
         self.current_node = root
 
     def choose(self, state):
-        #  start = time.time()
+        start = time.time()
         #  定位current_node
         cards_out = self.game.cards_out
         length = len(cards_out)
@@ -60,16 +60,16 @@ class MctsModel(Agent):
             last_move = self.trans_card(Card.visual_card(self.game.last_move))
             last_p = self.game.last_pid
             moves_num = len(get_moves(my_card, last_move))
-            state = State(my_id, my_card, next_card, next_next_card, last_move, -1, moves_num, None, last_p)
-            self.current_node.set_state(state)
+            state_ = State(my_id, my_card, next_card, next_next_card, last_move, -1, moves_num, None, last_p)
+            self.current_node.set_state(state_)
 
         #  搜索
-        computation_budget = 1000
+        computation_budget = 2000
         for i in range(computation_budget):
             expand_node = tree_policy(self.current_node, my_id)
             reward = default_policy(expand_node, my_id)
             backup(expand_node, reward)
-        best_next_node = get_bestchild(self.current_node, my_id)
+        best_next_node = get_bestchild_(self.current_node)
         move = best_next_node.get_state().action
         self.current_node = best_next_node
         new_move = self.card_to_list(move)
@@ -77,10 +77,10 @@ class MctsModel(Agent):
         hand_card = []
         for i, n in enumerate(Card.all_card_name):
             hand_card.extend([n] * self.get_hand_card()[i])
-        #  print("Player {}".format(self.player_id), ' ', hand_card, end=' // ')
-        #  print(Card.visual_card(new_move))
-        #  end = time.time()
-        #  dur = end - start
+        print("Player {}".format(self.player_id), ' ', hand_card, end=' // ')
+        print(Card.visual_card(new_move))
+        end = time.time()
+        dur = end - start
         #  print('cost: {}'.format(dur))
         return new_move, None
 
@@ -130,18 +130,18 @@ class RandomModel(Agent):
         hand_card = []
         for i, n in enumerate(Card.all_card_name):
             hand_card.extend([n]*self.get_hand_card()[i])
-        #  print("Player {}".format(self.player_id), ' ', hand_card, end=' // ')
+        print("Player {}".format(self.player_id), ' ', hand_card, end=' // ')
 
         i = np.random.choice(len(valid_moves))
         move = valid_moves[i]
-        #  print(Card.visual_card(move))
+        print(Card.visual_card(move))
 
         return move, None
 
 
 if __name__=="__main__":
     #   game = Game([RandomModel(i) for i in range(3)])
-    game = Game([RandomModel(0), MctsModel(1), RandomModel(2)])
+    game = Game([MctsModel(0), RandomModel(1), RandomModel(2)])
     # win_count = [0, 0, 0]
     for i_episode in range(1):
         game.game_reset()
